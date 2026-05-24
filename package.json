@@ -3,9 +3,17 @@
   "version": "1.0.0",
   "description": "The Graph subgraph for OneMEME Launchpad on BNB Smart Chain",
   "scripts": {
-    "codegen": "graph codegen",
-    "build": "graph build",
-    "deploy": "graph deploy",
+    "codegen": "graph codegen subgraph.bsc.yaml",
+    "build": "graph build subgraph.bsc.yaml",
+    "deploy": "graph deploy subgraph.bsc.yaml",
+
+    "codegen:bsc": "graph codegen subgraph.bsc.yaml",
+    "build:bsc": "graph build subgraph.bsc.yaml",
+    "deploy:bsc": "graph deploy subgraph.bsc.yaml",
+
+    "codegen:ethereum": "graph codegen subgraph.ethereum.yaml",
+    "build:ethereum": "graph build subgraph.ethereum.yaml",
+    "deploy:ethereum": "graph deploy subgraph.ethereum.yaml",
 
     "codegen:full": "graph codegen subgraph.full.yaml",
     "build:full": "graph build subgraph.full.yaml",

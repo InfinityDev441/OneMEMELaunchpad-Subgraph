@@ -1,0 +1,138 @@
+specVersion: 1.0.0
+description: OneMEME Launchpad subgraph — tracks token launches, bonding-curve trades, migrations, and creator vesting on Ethereum
+repository: https://github.com/timedbase/OneMEMELaunchpad-Subgraph
+features:
+  - ipfsOnEthereumContracts
+
+indexerHints:
+  prune: auto
+
+schema:
+  file: ./schema.graphql
+
+dataSources:
+  - kind: ethereum
+    name: LaunchpadFactory
+    network: mainnet
+    source:
+      address: "0x534c9466aDb7d592235455C580cB4F836339c375"
+      abi: LaunchpadFactory
+      startBlock: 25164500
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Factory
+        - Token
+        - TimelockAction
+      abis:
+        - name: LaunchpadFactory
+          file: ./abis/LaunchpadFactory.json
+        - name: Token
+          file: ./abis/Token.json
+      eventHandlers:
+        - event: TokenCreated(indexed address,indexed address,uint256,uint256,uint256,bool,uint256)
+          handler: handleTokenCreated
+        - event: DefaultParamsUpdated(uint256,uint256,uint256,uint256)
+          handler: handleDefaultParamsUpdated
+        - event: CreationFeeUpdated(uint256,uint256)
+          handler: handleCreationFeeUpdated
+        - event: OwnershipTransferred(indexed address,indexed address)
+          handler: handleOwnershipTransferred
+        - event: ManagerAdded(indexed address)
+          handler: handleManagerAdded
+        - event: ManagerRemoved(indexed address)
+          handler: handleManagerRemoved
+        - event: TimelockQueued(indexed bytes32,uint256)
+          handler: handleTimelockQueued
+        - event: TimelockExecuted(indexed bytes32)
+          handler: handleTimelockExecuted
+        - event: TimelockCancelled(indexed bytes32)
+          handler: handleTimelockCancelled
+      file: ./src/launchpadFactory.ts
+
+  - kind: ethereum
+    name: BondingCurve
+    network: mainnet
+    source:
+      address: "0xA78df27496825B29CbdCD3778e6bc375a646Ae04"
+      abi: BondingCurve
+      startBlock: 25164500
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Token
+        - Trade
+        - Migration
+        - Factory
+        - TokenSnapshot
+        - TokenPeriodStats
+      abis:
+        - name: BondingCurve
+          file: ./abis/BondingCurve.json
+      eventHandlers:
+        - event: TokenBought(indexed address,indexed address,uint256,uint256,uint256,uint256)
+          handler: handleTokenBought
+        - event: TokenSold(indexed address,indexed address,uint256,uint256,uint256)
+          handler: handleTokenSold
+        - event: TokenMigrated(indexed address,indexed address,uint256,uint256)
+          handler: handleTokenMigrated
+        - event: FeesUpdated(uint256,uint256)
+          handler: handleFeesUpdated
+        - event: FeeRecipientUpdated(address)
+          handler: handleFeeRecipientUpdated
+        - event: CharityWalletUpdated(address)
+          handler: handleCharityWalletUpdated
+        - event: RouterUpdated(indexed address,indexed address)
+          handler: handleRouterUpdated
+      file: ./src/bondingCurve.ts
+
+  - kind: ethereum
+    name: VestingWallet
+    network: mainnet
+    source:
+      address: "0xe9F35abA5B0926258bE6EBbc17546B02704fB91C"
+      abi: VestingWallet
+      startBlock: 25164500
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - VestingSchedule
+        - VestingClaim
+      abis:
+        - name: VestingWallet
+          file: ./abis/VestingWallet.json
+      eventHandlers:
+        - event: VestingAdded(indexed address,indexed address,uint256)
+          handler: handleVestingAdded
+        - event: Claimed(indexed address,indexed address,uint256)
+          handler: handleClaimed
+        - event: VestingVoided(indexed address,indexed address,uint256)
+          handler: handleVestingVoided
+      file: ./src/vestingWallet.ts
+
+templates:
+  - kind: ethereum
+    name: MemeToken
+    network: mainnet
+    source:
+      abi: MemeToken
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Holder
+        - Token
+      abis:
+        - name: MemeToken
+          file: ./abis/MemeToken.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+      file: ./src/memeToken.ts
