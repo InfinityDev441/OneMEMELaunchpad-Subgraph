@@ -116,6 +116,44 @@ dataSources:
           handler: handleVestingVoided
       file: ./src/vestingWallet.ts
 
+  - kind: ethereum
+    name: OneCoinLocker
+    network: bsc
+    source:
+      address: "0x6C6e9740753d9F6C1E5D61C8bc0f34E37590f6C5"
+      abi: OneCoinLocker
+      startBlock: 91706714
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Locker
+        - Lock
+        - LockWithdrawal
+        - LockTransfer
+      abis:
+        - name: OneCoinLocker
+          file: ./abis/OneCoinLocker.json
+      eventHandlers:
+        - event: LockCreated(indexed uint256,indexed address,indexed address,uint256,uint256,uint256,uint8,bool)
+          handler: handleLockCreated
+        - event: LockEdited(indexed uint256,uint256,uint256)
+          handler: handleLockEdited
+        - event: LockDescriptionChanged(indexed uint256,string)
+          handler: handleLockDescriptionChanged
+        - event: Withdrawn(indexed uint256,indexed address,uint256,uint256)
+          handler: handleWithdrawn
+        - event: LockExtended(indexed uint256,uint256)
+          handler: handleLockExtended
+        - event: LockTransferred(indexed uint256,indexed address,indexed address)
+          handler: handleLockTransferred
+        - event: LockRenounced(indexed uint256)
+          handler: handleLockRenounced
+        - event: FeeUpdated(uint256)
+          handler: handleFeeUpdated
+      file: ./src/locker.ts
+
 templates:
   - kind: ethereum
     name: MemeToken

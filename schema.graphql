@@ -236,6 +236,88 @@ type Holder @entity {
   lastUpdatedTimestamp: BigInt!
 }
 
+# ─── Locker ──────────────────────────────────────────────────────────────────
+
+"""
+1CoinLocker contract state (one entity per deployed contract address).
+"""
+type Locker @entity {
+  " Contract address "
+  id: Bytes!
+  " All-time number of locks ever created "
+  totalLocks: BigInt!
+  " Locks not yet fully withdrawn or renounced "
+  activeLocks: BigInt!
+  " Current static fallback fee (wei) — updated via FeeUpdated "
+  fee: BigInt!
+  locks: [Lock!]! @derivedFrom(field: "locker")
+}
+
+"""
+An individual token lock on the 1CoinLocker.
+"""
+type Lock @entity {
+  " locker address + lockId (concatI32) "
+  id: Bytes!
+  locker: Locker!
+  lockId: BigInt!
+
+  " address(0) / null when renounced "
+  owner: Bytes
+  token: Bytes!
+
+  " Actual tokens received after any transfer fee "
+  amount: BigInt!
+  withdrawn: BigInt!
+
+  lockDate: BigInt!
+  " 0 for Cliff locks; vesting start for Linear locks "
+  startTime: BigInt!
+  endTime: BigInt!
+
+  " Cliff | Linear "
+  lockType: String!
+  isLP: Boolean!
+  description: String!
+  renounced: Boolean!
+
+  createdAtTimestamp: BigInt!
+  createdAtBlockNumber: BigInt!
+  txHash: Bytes!
+
+  withdrawals: [LockWithdrawal!]! @derivedFrom(field: "lock")
+  transfers:   [LockTransfer!]!   @derivedFrom(field: "lock")
+}
+
+"""
+A single withdrawal from a Lock.
+"""
+type LockWithdrawal @entity {
+  " txHash + logIndex "
+  id: Bytes!
+  lock: Lock!
+  owner: Bytes!
+  amount: BigInt!
+  nativeFee: BigInt!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  txHash: Bytes!
+}
+
+"""
+A lock ownership transfer.
+"""
+type LockTransfer @entity {
+  " txHash + logIndex "
+  id: Bytes!
+  lock: Lock!
+  from: Bytes!
+  to: Bytes!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  txHash: Bytes!
+}
+
 # ─── Peripheral Contracts ────────────────────────────────────────────────────
 
 """
