@@ -22,6 +22,11 @@ type Factory @entity {
   defaultVirtualBNB: BigInt!
   defaultMigrationTarget: BigInt!
   owner: Bytes!
+  " Pending owner from two-step ownership transfer; null until proposed "
+  pendingOwner: Bytes
+  platformFeeBps: BigInt!
+  charityFeeBps: BigInt!
+  vestingWallet: Bytes
 
   timelockActions: [TimelockAction!]! @derivedFrom(field: "factory")
 }
@@ -81,6 +86,9 @@ type Token @entity {
   sellsCount: BigInt!
   totalVolumeBNBBuy: BigInt!
   totalVolumeBNBSell: BigInt!
+
+  " Last known spot price (wei, scaled ×1e18) — kept in sync on every trade for open-price seeding "
+  lastKnownPrice: BigInt!
 
   " Creation metadata "
   createdAtTimestamp: BigInt!
@@ -203,6 +211,11 @@ type TokenPeriodStats @entity {
   sellsCount: BigInt!
   openRaisedBNB: BigInt!
   closeRaisedBNB: BigInt!
+  " Spot price (wei, scaled ×1e18) = (virtualBNB + raisedBNB) × 1e18 / bcTokensPool "
+  openPrice: BigInt!
+  highPrice: BigInt!
+  lowPrice: BigInt!
+  closePrice: BigInt!
 }
 
 """
@@ -217,6 +230,11 @@ type TokenSnapshot @entity {
   timestamp: BigInt!
   openRaisedBNB: BigInt!
   closeRaisedBNB: BigInt!
+  " Spot price (wei, scaled ×1e18) = (virtualBNB + raisedBNB) × 1e18 / bcTokensPool "
+  openPrice: BigInt!
+  highPrice: BigInt!
+  lowPrice: BigInt!
+  closePrice: BigInt!
   volumeBNB: BigInt!
   buyCount: Int!
   sellCount: Int!
@@ -234,6 +252,106 @@ type Holder @entity {
   balance: BigInt!
   lastUpdatedBlock: BigInt!
   lastUpdatedTimestamp: BigInt!
+}
+
+# ─── Spark ───────────────────────────────────────────────────────────────────
+
+"""
+SparkLocker configuration state (singleton per deployed contract).
+Initialised on the first event via contract calls; updated by governance events.
+"""
+type SparkLockerState @entity {
+  " Locker contract address "
+  id: Bytes!
+  owner: Bytes!
+  launcher: Bytes
+  platformWallet: Bytes!
+  charityWallet: Bytes!
+  creatorBps: BigInt!
+  platformBps: BigInt!
+  charityBps: BigInt!
+}
+
+"""
+A V3-compatible DEX registered on SparkLauncher (factory → positionManager + router).
+"""
+type SparkDex @entity {
+  " V3 factory address "
+  id: Bytes!
+  positionManager: Bytes!
+  router: Bytes!
+  enabled: Boolean!
+  addedAtTimestamp: BigInt!
+  addedAtBlockNumber: BigInt!
+}
+
+"""
+A quote token accepted by SparkLauncher for launch fees.
+"""
+type SparkQuoteToken @entity {
+  " Quote token contract address "
+  id: Bytes!
+  launchFee: BigInt!
+  decimals: Int!
+  enabled: Boolean!
+}
+
+"""
+A token launched through SparkLauncher.
+Ownerless ERC-20; full-range V3 LP is permanently locked in SparkLocker.
+"""
+type SparkLaunchedToken @entity {
+  " Deployed token contract address "
+  id: Bytes!
+  name: String
+  symbol: String
+  metaURI: String
+  creator: Bytes!
+  " V3 factory used at launch "
+  factory: Bytes!
+  " Position manager for the LP NFT "
+  positionManager: Bytes!
+  quoteToken: Bytes!
+  feeWallet: Bytes!
+  pool: Bytes!
+  " LP NFT id held by SparkLocker "
+  tokenId: BigInt!
+  " True if the LP NFT was emergency-withdrawn by the locker owner "
+  lpWithdrawn: Boolean!
+
+  " Cumulative fees distributed across all claimFees calls "
+  totalCreatorFees0: BigInt!
+  totalCreatorFees1: BigInt!
+  totalPlatformFees0: BigInt!
+  totalPlatformFees1: BigInt!
+  totalCharityFees0: BigInt!
+  totalCharityFees1: BigInt!
+  claimCount: BigInt!
+
+  createdAtTimestamp: BigInt!
+  createdAtBlockNumber: BigInt!
+  txHash: Bytes!
+
+  feeClaims: [SparkFeeClaim!]! @derivedFrom(field: "token")
+}
+
+"""
+A single LP swap-fee claim on SparkLocker.
+"""
+type SparkFeeClaim @entity {
+  " txHash + logIndex "
+  id: Bytes!
+  token: SparkLaunchedToken!
+  feeWallet: Bytes!
+  creator0: BigInt!
+  creator1: BigInt!
+  platform0: BigInt!
+  platform1: BigInt!
+  charity0: BigInt!
+  charity1: BigInt!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  txHash: Bytes!
 }
 
 # ─── Locker ──────────────────────────────────────────────────────────────────

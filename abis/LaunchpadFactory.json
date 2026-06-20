@@ -76,22 +76,6 @@
   },
   {
     "type": "event",
-    "name": "ManagerAdded",
-    "inputs": [
-      { "name": "manager", "type": "address", "indexed": true }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "ManagerRemoved",
-    "inputs": [
-      { "name": "manager", "type": "address", "indexed": true }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
     "name": "OwnershipTransferProposed",
     "inputs": [
       { "name": "current",  "type": "address", "indexed": true },
@@ -114,6 +98,35 @@
     "inputs": [
       { "name": "prev", "type": "address", "indexed": true },
       { "name": "next", "type": "address", "indexed": true }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "BNBRescued",
+    "inputs": [
+      { "name": "to",     "type": "address", "indexed": true  },
+      { "name": "amount", "type": "uint256", "indexed": false }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "TokenRescued",
+    "inputs": [
+      { "name": "token",  "type": "address", "indexed": true  },
+      { "name": "to",     "type": "address", "indexed": true  },
+      { "name": "amount", "type": "uint256", "indexed": false }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ImplUpdated",
+    "inputs": [
+      { "name": "implType", "type": "string",  "indexed": false },
+      { "name": "prev",     "type": "address", "indexed": true  },
+      { "name": "next",     "type": "address", "indexed": true  }
     ],
     "anonymous": false
   },

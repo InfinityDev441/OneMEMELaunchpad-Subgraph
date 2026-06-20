@@ -25,6 +25,8 @@ export function getOrCreateFactory(): Factory {
     factory.defaultVirtualBNB     = BigInt.fromI32(0);
     factory.defaultMigrationTarget= BigInt.fromI32(0);
     factory.owner                 = Bytes.empty();
+    factory.platformFeeBps        = BigInt.fromI32(0);
+    factory.charityFeeBps         = BigInt.fromI32(0);
     factory.save();
   }
   return factory as Factory;

@@ -1,0 +1,52 @@
+[
+  {
+    "type": "event",
+    "name": "TokenLaunched",
+    "inputs": [
+      { "name": "token",      "type": "address", "indexed": true  },
+      { "name": "creator",    "type": "address", "indexed": true  },
+      { "name": "factory",    "type": "address", "indexed": true  },
+      { "name": "quoteToken", "type": "address", "indexed": false },
+      { "name": "feeWallet",  "type": "address", "indexed": false },
+      { "name": "pool",       "type": "address", "indexed": false },
+      { "name": "tokenId",    "type": "uint256", "indexed": false }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "DexAdded",
+    "inputs": [
+      { "name": "factory",         "type": "address", "indexed": true  },
+      { "name": "positionManager", "type": "address", "indexed": false },
+      { "name": "router",          "type": "address", "indexed": false }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "DexDisabled",
+    "inputs": [
+      { "name": "factory", "type": "address", "indexed": true }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "QuoteTokenAdded",
+    "inputs": [
+      { "name": "token",    "type": "address", "indexed": true  },
+      { "name": "fee",      "type": "uint256", "indexed": false },
+      { "name": "decimals", "type": "uint8",   "indexed": false }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "QuoteTokenDisabled",
+    "inputs": [
+      { "name": "token", "type": "address", "indexed": true }
+    ],
+    "anonymous": false
+  }
+]

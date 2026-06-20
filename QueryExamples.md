@@ -22,8 +22,10 @@ BNB amounts are stored in wei — divide by `1e18` to get BNB.
 10. [Token Snapshots (OHLCV)](#token-snapshots-ohlcv)
 11. [Holders](#holders)
 12. [Trending Tokens](#trending-tokens)
-13. [Analytics & combined queries](#analytics--combined-queries)
-14. [Pagination](#pagination)
+13. [OneCoinLocker](#onecoinlocker)
+14. [Spark](#spark)
+15. [Analytics & combined queries](#analytics--combined-queries)
+16. [Pagination](#pagination)
 
 ---
 
@@ -2254,7 +2256,11 @@ Since The Graph cannot compute ratios in a filter, the pattern is to filter by a
 
 ## Token Snapshots (OHLCV)
 
-Per-block price/volume snapshots recorded each time a buy or sell occurs. One `TokenSnapshot` entity per (token, block) pair. `openRaisedBNB` / `closeRaisedBNB` represent the bonding-curve `raisedBNB` value before and after the first/last trade in the block.
+Per-block price/volume snapshots recorded each time a buy or sell occurs. One `TokenSnapshot` entity per (token, block) pair.
+
+**Raw pool fields:** `openRaisedBNB` / `closeRaisedBNB` — the bonding-curve `raisedBNB` value before/after the first/last trade in the block.
+
+**Spot price fields (wei, scaled ×1e18):** `openPrice`, `highPrice`, `lowPrice`, `closePrice` — derived from `BondingCurve.getSpotPrice(token)` using `(virtualBNB + raisedBNB) × 1e18 / bcTokensPool`. `openPrice` is the `lastKnownPrice` carried forward from the previous trade; `closePrice` is fetched post-trade.
 
 ### Recent snapshots for a token
 
@@ -2269,6 +2275,10 @@ Per-block price/volume snapshots recorded each time a buy or sell occurs. One `T
     id
     blockNumber
     timestamp
+    openPrice
+    highPrice
+    lowPrice
+    closePrice
     openRaisedBNB
     closeRaisedBNB
     volumeBNB
@@ -2288,6 +2298,10 @@ Per-block price/volume snapshots recorded each time a buy or sell occurs. One `T
         "id": "0xa1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b200246f90",
         "blockNumber": "38120080",
         "timestamp": "1700086740",
+        "openPrice": "1042000000000000",
+        "highPrice": "1086000000000000",
+        "lowPrice": "1042000000000000",
+        "closePrice": "1086000000000000",
         "openRaisedBNB": "5000000000000000000",
         "closeRaisedBNB": "5200000000000000000",
         "volumeBNB": "200000000000000000",
@@ -2298,6 +2312,10 @@ Per-block price/volume snapshots recorded each time a buy or sell occurs. One `T
         "id": "0xa1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b200246f80",
         "blockNumber": "38120064",
         "timestamp": "1700086692",
+        "openPrice": "1000000000000000",
+        "highPrice": "1042000000000000",
+        "lowPrice": "980000000000000",
+        "closePrice": "1042000000000000",
         "openRaisedBNB": "4800000000000000000",
         "closeRaisedBNB": "5000000000000000000",
         "volumeBNB": "350000000000000000",
@@ -2416,6 +2434,7 @@ Per-block price/volume snapshots recorded each time a buy or sell occurs. One `T
   ) {
     blockNumber
     timestamp
+    closePrice
     closeRaisedBNB
     volumeBNB
   }
@@ -2431,6 +2450,7 @@ Per-block price/volume snapshots recorded each time a buy or sell occurs. One `T
       {
         "blockNumber": "38120080",
         "timestamp": "1700086740",
+        "closePrice": "1086000000000000",
         "closeRaisedBNB": "5200000000000000000",
         "volumeBNB": "200000000000000000"
       }
@@ -3110,6 +3130,630 @@ Per-block price/volume snapshots recorded each time a buy or sell occurs. One `T
         "sellsCount": "0",
         "openRaisedBNB": "0",
         "closeRaisedBNB": "1000000000000000000"
+      }
+    ]
+  }
+}
+```
+
+---
+
+## OneCoinLocker
+
+The `OneCoinLocker` indexes token locks created through `1CoinLocker.sol`. Each lock has an owner, a token, a cliff or linear vesting schedule, and a withdrawal/transfer history.
+
+### All locks — newest first
+
+```graphql
+{
+  locks(orderBy: createdAtTimestamp, orderDirection: desc, first: 20) {
+    id
+    lockId
+    locker { id fee }
+    owner
+    token
+    amount
+    withdrawn
+    lockDate
+    startTime
+    endTime
+    lockType
+    isLP
+    description
+    renounced
+    createdAtTimestamp
+    txHash
+  }
+}
+```
+
+**Example response:**
+
+```json
+{
+  "data": {
+    "locks": [
+      {
+        "id": "0x6c6e9740753d9f6c1e5d61c8bc0f34e37590f6c500000000000000000000000000000000001",
+        "lockId": "1",
+        "locker": { "id": "0x6c6e9740753d9f6c1e5d61c8bc0f34e37590f6c5", "fee": "10000000000000000" },
+        "owner": "0xf1f2f3f4f5f6f7f8f1f2f3f4f5f6f7f8f1f2f3f4",
+        "token": "0xa1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+        "amount": "100000000000000000000000000",
+        "withdrawn": "0",
+        "lockDate": "1700086400",
+        "startTime": "0",
+        "endTime": "1731622400",
+        "lockType": "Cliff",
+        "isLP": false,
+        "description": "Team tokens",
+        "renounced": false,
+        "createdAtTimestamp": "1700086400",
+        "txHash": "0xabcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234"
+      }
+    ]
+  }
+}
+```
+
+### Locks for a specific token
+
+```graphql
+{
+  locks(
+    where: { token: "0xTOKEN_ADDRESS" }
+    orderBy: createdAtTimestamp
+    orderDirection: desc
+  ) {
+    lockId
+    owner
+    amount
+    withdrawn
+    lockDate
+    endTime
+    lockType
+    isLP
+    renounced
+    createdAtTimestamp
+  }
+}
+```
+
+**Example response:**
+
+```json
+{
+  "data": {
+    "locks": [
+      {
+        "lockId": "1",
+        "owner": "0xf1f2f3f4f5f6f7f8f1f2f3f4f5f6f7f8f1f2f3f4",
+        "amount": "100000000000000000000000000",
+        "withdrawn": "0",
+        "lockDate": "1700086400",
+        "endTime": "1731622400",
+        "lockType": "Cliff",
+        "isLP": false,
+        "renounced": false,
+        "createdAtTimestamp": "1700086400"
+      }
+    ]
+  }
+}
+```
+
+### Active locks held by a wallet
+
+```graphql
+{
+  locks(
+    where: { owner: "0xWALLET_ADDRESS", renounced: false }
+    orderBy: endTime
+    orderDirection: asc
+  ) {
+    lockId
+    token
+    amount
+    withdrawn
+    lockDate
+    endTime
+    lockType
+    isLP
+  }
+}
+```
+
+**Example response:**
+
+```json
+{
+  "data": {
+    "locks": [
+      {
+        "lockId": "1",
+        "token": "0xa1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+        "amount": "100000000000000000000000000",
+        "withdrawn": "0",
+        "lockDate": "1700086400",
+        "endTime": "1731622400",
+        "lockType": "Cliff",
+        "isLP": false
+      }
+    ]
+  }
+}
+```
+
+### LP locks only
+
+```graphql
+{
+  locks(
+    where: { isLP: true }
+    orderBy: createdAtTimestamp
+    orderDirection: desc
+    first: 20
+  ) {
+    lockId
+    owner
+    token
+    amount
+    withdrawn
+    endTime
+    renounced
+    createdAtTimestamp
+  }
+}
+```
+
+**Example response:**
+
+```json
+{
+  "data": {
+    "locks": [
+      {
+        "lockId": "5",
+        "owner": "0xaaabbbcccdddeeefffaaabbbcccdddeeefffaaab",
+        "token": "0xcafe1234cafe1234cafe1234cafe1234cafe1234",
+        "amount": "50000000000000000",
+        "withdrawn": "0",
+        "endTime": "1763158400",
+        "renounced": false,
+        "createdAtTimestamp": "1700172800"
+      }
+    ]
+  }
+}
+```
+
+### Lock with withdrawal history
+
+```graphql
+{
+  lock(id: "0xLOCK_ENTITY_ID") {
+    lockId
+    owner
+    token
+    amount
+    withdrawn
+    endTime
+    lockType
+    withdrawals(orderBy: timestamp, orderDirection: desc) {
+      amount
+      nativeFee
+      timestamp
+      txHash
+    }
+    transfers(orderBy: timestamp, orderDirection: desc) {
+      from
+      to
+      timestamp
+      txHash
+    }
+  }
+}
+```
+
+**Example response:**
+
+```json
+{
+  "data": {
+    "lock": {
+      "lockId": "1",
+      "owner": "0xf1f2f3f4f5f6f7f8f1f2f3f4f5f6f7f8f1f2f3f4",
+      "token": "0xa1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+      "amount": "100000000000000000000000000",
+      "withdrawn": "20000000000000000000000000",
+      "endTime": "1731622400",
+      "lockType": "Linear",
+      "withdrawals": [
+        {
+          "amount": "20000000000000000000000000",
+          "nativeFee": "10000000000000000",
+          "timestamp": "1715000000",
+          "txHash": "0xwith1234with1234with1234with1234with1234with1234with1234with1234"
+        }
+      ],
+      "transfers": []
+    }
+  }
+}
+```
+
+### Locker contract state
+
+```graphql
+{
+  lockers {
+    id
+    totalLocks
+    activeLocks
+    fee
+  }
+}
+```
+
+**Example response:**
+
+```json
+{
+  "data": {
+    "lockers": [
+      {
+        "id": "0x6c6e9740753d9f6c1e5d61c8bc0f34e37590f6c5",
+        "totalLocks": "42",
+        "activeLocks": "38",
+        "fee": "10000000000000000"
+      }
+    ]
+  }
+}
+```
+
+---
+
+## Spark
+
+The Spark system lets anyone launch an ownerless ERC-20 token with a permanent Uniswap V3 full-range LP position locked inside SparkLocker. Swap fees accrue to the LP NFT and can be claimed and split between the creator, platform, and charity.
+
+### All launched tokens — newest first
+
+```graphql
+{
+  sparkLaunchedTokens(orderBy: createdAtTimestamp, orderDirection: desc, first: 20) {
+    id
+    name
+    symbol
+    metaURI
+    creator
+    factory
+    positionManager
+    quoteToken
+    feeWallet
+    pool
+    tokenId
+    claimCount
+    totalCreatorFees0
+    totalCreatorFees1
+    totalPlatformFees0
+    totalPlatformFees1
+    totalCharityFees0
+    totalCharityFees1
+    createdAtTimestamp
+    txHash
+  }
+}
+```
+
+**Example response:**
+
+```json
+{
+  "data": {
+    "sparkLaunchedTokens": [
+      {
+        "id": "0xaaaa1111aaaa1111aaaa1111aaaa1111aaaa1111",
+        "name": "SparkPepe",
+        "symbol": "SPPE",
+        "metaURI": "ipfs://QmSparkPepeMetaXYZ",
+        "creator": "0xf1f2f3f4f5f6f7f8f1f2f3f4f5f6f7f8f1f2f3f4",
+        "factory": "0x1f98431c8ad98523631ae4a59f267346ea31f984",
+        "positionManager": "0xc36442b4a4522e871399cd717abdd847ab11fe88",
+        "quoteToken": "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c",
+        "feeWallet": "0xf1f2f3f4f5f6f7f8f1f2f3f4f5f6f7f8f1f2f3f4",
+        "pool": "0x1234abcd1234abcd1234abcd1234abcd1234abcd",
+        "tokenId": "12345",
+        "claimCount": "3",
+        "totalCreatorFees0": "450000000000000000",
+        "totalCreatorFees1": "900000000000000000",
+        "totalPlatformFees0": "160000000000000000",
+        "totalPlatformFees1": "320000000000000000",
+        "totalCharityFees0": "32000000000000000",
+        "totalCharityFees1": "64000000000000000",
+        "createdAtTimestamp": "1700086400",
+        "txHash": "0xlaun1234laun1234laun1234laun1234laun1234laun1234laun1234laun1234"
+      }
+    ]
+  }
+}
+```
+
+### Single Spark token — full detail with fee claims
+
+```graphql
+{
+  sparkLaunchedToken(id: "0xTOKEN_ADDRESS") {
+    id
+    name
+    symbol
+    metaURI
+    creator
+    factory
+    positionManager
+    quoteToken
+    feeWallet
+    pool
+    tokenId
+    claimCount
+    totalCreatorFees0
+    totalCreatorFees1
+    totalPlatformFees0
+    totalPlatformFees1
+    totalCharityFees0
+    totalCharityFees1
+    createdAtTimestamp
+    txHash
+    feeClaims(orderBy: timestamp, orderDirection: desc, first: 20) {
+      id
+      feeWallet
+      creator0
+      creator1
+      platform0
+      platform1
+      charity0
+      charity1
+      timestamp
+      txHash
+    }
+  }
+}
+```
+
+**Example response:**
+
+```json
+{
+  "data": {
+    "sparkLaunchedToken": {
+      "id": "0xaaaa1111aaaa1111aaaa1111aaaa1111aaaa1111",
+      "name": "SparkPepe",
+      "symbol": "SPPE",
+      "metaURI": "ipfs://QmSparkPepeMetaXYZ",
+      "creator": "0xf1f2f3f4f5f6f7f8f1f2f3f4f5f6f7f8f1f2f3f4",
+      "factory": "0x1f98431c8ad98523631ae4a59f267346ea31f984",
+      "positionManager": "0xc36442b4a4522e871399cd717abdd847ab11fe88",
+      "quoteToken": "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c",
+      "feeWallet": "0xf1f2f3f4f5f6f7f8f1f2f3f4f5f6f7f8f1f2f3f4",
+      "pool": "0x1234abcd1234abcd1234abcd1234abcd1234abcd",
+      "tokenId": "12345",
+      "claimCount": "3",
+      "totalCreatorFees0": "450000000000000000",
+      "totalCreatorFees1": "900000000000000000",
+      "totalPlatformFees0": "160000000000000000",
+      "totalPlatformFees1": "320000000000000000",
+      "totalCharityFees0": "32000000000000000",
+      "totalCharityFees1": "64000000000000000",
+      "createdAtTimestamp": "1700086400",
+      "txHash": "0xlaun1234laun1234laun1234laun1234laun1234laun1234laun1234laun1234",
+      "feeClaims": [
+        {
+          "id": "0xclaim111claim111claim111claim111claim111claim111claim111claim11100",
+          "feeWallet": "0xf1f2f3f4f5f6f7f8f1f2f3f4f5f6f7f8f1f2f3f4",
+          "creator0": "150000000000000000",
+          "creator1": "300000000000000000",
+          "platform0": "53000000000000000",
+          "platform1": "107000000000000000",
+          "charity0": "10000000000000000",
+          "charity1": "21000000000000000",
+          "timestamp": "1700200000",
+          "txHash": "0xclaim111claim111claim111claim111claim111claim111claim111claim111"
+        }
+      ]
+    }
+  }
+}
+```
+
+### Tokens launched by a specific creator
+
+```graphql
+{
+  sparkLaunchedTokens(
+    where: { creator: "0xCREATOR_ADDRESS" }
+    orderBy: createdAtTimestamp
+    orderDirection: desc
+  ) {
+    id
+    name
+    symbol
+    quoteToken
+    pool
+    claimCount
+    totalCreatorFees0
+    totalCreatorFees1
+    createdAtTimestamp
+  }
+}
+```
+
+**Example response:**
+
+```json
+{
+  "data": {
+    "sparkLaunchedTokens": [
+      {
+        "id": "0xaaaa1111aaaa1111aaaa1111aaaa1111aaaa1111",
+        "name": "SparkPepe",
+        "symbol": "SPPE",
+        "quoteToken": "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c",
+        "pool": "0x1234abcd1234abcd1234abcd1234abcd1234abcd",
+        "claimCount": "3",
+        "totalCreatorFees0": "450000000000000000",
+        "totalCreatorFees1": "900000000000000000",
+        "createdAtTimestamp": "1700086400"
+      }
+    ]
+  }
+}
+```
+
+### All fee claims — newest first
+
+```graphql
+{
+  sparkFeeClaims(orderBy: timestamp, orderDirection: desc, first: 50) {
+    id
+    token { id name symbol }
+    feeWallet
+    creator0
+    creator1
+    platform0
+    platform1
+    charity0
+    charity1
+    timestamp
+    blockNumber
+    txHash
+  }
+}
+```
+
+**Example response:**
+
+```json
+{
+  "data": {
+    "sparkFeeClaims": [
+      {
+        "id": "0xclaim111claim111claim111claim111claim111claim111claim111claim11100",
+        "token": {
+          "id": "0xaaaa1111aaaa1111aaaa1111aaaa1111aaaa1111",
+          "name": "SparkPepe",
+          "symbol": "SPPE"
+        },
+        "feeWallet": "0xf1f2f3f4f5f6f7f8f1f2f3f4f5f6f7f8f1f2f3f4",
+        "creator0": "150000000000000000",
+        "creator1": "300000000000000000",
+        "platform0": "53000000000000000",
+        "platform1": "107000000000000000",
+        "charity0": "10000000000000000",
+        "charity1": "21000000000000000",
+        "timestamp": "1700200000",
+        "blockNumber": "38160000",
+        "txHash": "0xclaim111claim111claim111claim111claim111claim111claim111claim111"
+      }
+    ]
+  }
+}
+```
+
+### SparkLocker configuration state
+
+```graphql
+{
+  sparkLockerStates {
+    id
+    owner
+    launcher
+    platformWallet
+    charityWallet
+    creatorBps
+    platformBps
+    charityBps
+  }
+}
+```
+
+**Example response:**
+
+```json
+{
+  "data": {
+    "sparkLockerStates": [
+      {
+        "id": "0xbbbb2222bbbb2222bbbb2222bbbb2222bbbb2222",
+        "owner": "0xf1f2f3f4f5f6f7f8f1f2f3f4f5f6f7f8f1f2f3f4",
+        "launcher": "0xcccc3333cccc3333cccc3333cccc3333cccc3333",
+        "platformWallet": "0x1111222233334444111122223333444411112222",
+        "charityWallet": "0x5555666677778888555566667777888855556666",
+        "creatorBps": "7000",
+        "platformBps": "2500",
+        "charityBps": "500"
+      }
+    ]
+  }
+}
+```
+
+### Registered DEXes on SparkLauncher
+
+```graphql
+{
+  sparkDexes(where: { enabled: true }) {
+    id
+    positionManager
+    router
+    enabled
+    addedAtTimestamp
+  }
+}
+```
+
+**Example response:**
+
+```json
+{
+  "data": {
+    "sparkDexes": [
+      {
+        "id": "0x1f98431c8ad98523631ae4a59f267346ea31f984",
+        "positionManager": "0xc36442b4a4522e871399cd717abdd847ab11fe88",
+        "router": "0xe592427a0aece92de3edee1f18e0157c05861564",
+        "enabled": true,
+        "addedAtTimestamp": "1700000000"
+      }
+    ]
+  }
+}
+```
+
+### Accepted quote tokens
+
+```graphql
+{
+  sparkQuoteTokens(where: { enabled: true }) {
+    id
+    launchFee
+    decimals
+    enabled
+  }
+}
+```
+
+**Example response:**
+
+```json
+{
+  "data": {
+    "sparkQuoteTokens": [
+      {
+        "id": "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c",
+        "launchFee": "100000000000000000",
+        "decimals": 18,
+        "enabled": true
       }
     ]
   }

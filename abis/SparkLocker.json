@@ -1,0 +1,124 @@
+[
+  {
+    "type": "event",
+    "name": "PositionRegistered",
+    "inputs": [
+      { "name": "token",           "type": "address", "indexed": true  },
+      { "name": "tokenId",         "type": "uint256", "indexed": true  },
+      { "name": "feeWallet",       "type": "address", "indexed": false },
+      { "name": "pool",            "type": "address", "indexed": false },
+      { "name": "positionManager", "type": "address", "indexed": false }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "FeesClaimed",
+    "inputs": [
+      { "name": "token",     "type": "address", "indexed": true  },
+      { "name": "feeWallet", "type": "address", "indexed": true  },
+      { "name": "creator0",  "type": "uint256", "indexed": false },
+      { "name": "creator1",  "type": "uint256", "indexed": false },
+      { "name": "platform0", "type": "uint256", "indexed": false },
+      { "name": "platform1", "type": "uint256", "indexed": false },
+      { "name": "charity0",  "type": "uint256", "indexed": false },
+      { "name": "charity1",  "type": "uint256", "indexed": false }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "LauncherSet",
+    "inputs": [
+      { "name": "launcher", "type": "address", "indexed": true }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "PlatformWalletSet",
+    "inputs": [
+      { "name": "wallet", "type": "address", "indexed": true }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "CharityWalletSet",
+    "inputs": [
+      { "name": "wallet", "type": "address", "indexed": true }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "FeeBpsUpdated",
+    "inputs": [
+      { "name": "creatorBps",  "type": "uint256", "indexed": false },
+      { "name": "platformBps", "type": "uint256", "indexed": false },
+      { "name": "charityBps",  "type": "uint256", "indexed": false }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "OwnershipTransferred",
+    "inputs": [
+      { "name": "previousOwner", "type": "address", "indexed": true },
+      { "name": "newOwner",      "type": "address", "indexed": true }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "EmergencyWithdraw",
+    "inputs": [
+      { "name": "token",   "type": "address", "indexed": true  },
+      { "name": "to",      "type": "address", "indexed": true  },
+      { "name": "tokenId", "type": "uint256", "indexed": false }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "function",
+    "name": "owner",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "platformWallet",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "charityWallet",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "creatorBps",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "platformBps",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "charityBps",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256" }],
+    "stateMutability": "view"
+  }
+]

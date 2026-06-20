@@ -89,5 +89,12 @@
       { "name": "newFactory", "type": "address", "indexed": true }
     ],
     "anonymous": false
+  },
+  {
+    "type": "function",
+    "name": "getSpotPrice",
+    "inputs": [{ "name": "token_", "type": "address" }],
+    "outputs": [{ "name": "price", "type": "uint256" }],
+    "stateMutability": "view"
   }
 ]

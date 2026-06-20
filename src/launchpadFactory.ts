@@ -6,8 +6,10 @@ import {
   DefaultParamsUpdated,
   CreationFeeUpdated,
   OwnershipTransferred,
-  ManagerAdded,
-  ManagerRemoved,
+  OwnershipTransferProposed,
+  PlatformFeeUpdated,
+  CharityFeeUpdated,
+  VestingWalletUpdated,
   TimelockQueued,
   TimelockExecuted,
   TimelockCancelled,
@@ -80,6 +82,7 @@ export function handleTokenCreated(event: TokenCreated): void {
   token.sellsCount      = BigInt.fromI32(0);
   token.totalVolumeBNBBuy  = BigInt.fromI32(0);
   token.totalVolumeBNBSell = BigInt.fromI32(0);
+  token.lastKnownPrice  = BigInt.fromI32(0); // seeded by handleTokenRegistered once the bonding curve registers it
   token.createdAtTimestamp   = event.block.timestamp;
   token.createdAtBlockNumber = event.block.number;
   token.txHash = event.transaction.hash;
@@ -128,8 +131,29 @@ export function handleOwnershipTransferred(event: OwnershipTransferred): void {
   factory.save();
 }
 
-export function handleManagerAdded(_event: ManagerAdded): void {}
-export function handleManagerRemoved(_event: ManagerRemoved): void {}
+export function handleOwnershipTransferProposed(event: OwnershipTransferProposed): void {
+  const factory = getOrCreateFactory();
+  factory.pendingOwner = event.params.proposed;
+  factory.save();
+}
+
+export function handlePlatformFeeUpdated(event: PlatformFeeUpdated): void {
+  const factory = getOrCreateFactory();
+  factory.platformFeeBps = event.params.feeBps;
+  factory.save();
+}
+
+export function handleCharityFeeUpdated(event: CharityFeeUpdated): void {
+  const factory = getOrCreateFactory();
+  factory.charityFeeBps = event.params.feeBps;
+  factory.save();
+}
+
+export function handleVestingWalletUpdated(event: VestingWalletUpdated): void {
+  const factory = getOrCreateFactory();
+  factory.vestingWallet = event.params.next;
+  factory.save();
+}
 
 export function handleTimelockQueued(event: TimelockQueued): void {
   const id = event.params.actionId;
